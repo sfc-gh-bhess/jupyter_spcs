@@ -1,0 +1,5 @@
+Makefile
+jupyter.yaml
+test/pythonpath/*
+test/homedir/*
+__pycache__

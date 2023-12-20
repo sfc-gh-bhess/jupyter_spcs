@@ -1,0 +1,23 @@
+spec:
+  containers:
+    - name: jupyter
+      image: <<repository_url>>/jupyter_spcs
+      env:
+        SNOWFLAKE_WAREHOUSE: <<warehouse_name>>
+      volumeMounts:
+        - name: jupyterhome
+          mountPath: /app
+        - name: pythonpath
+          mountPath: /usr/local/lib/python3.10/site-packages
+
+  endpoints:
+    - name: jupyter
+      port: 8080
+      public: true
+  volumes:
+    - name: pythonpath
+      source: "<<pythonpath_stage>>"
+    - name: jupyterhome
+      source: "<<jupyterhome_stage>>"
+  networkPolicyConfig:
+    allowInternetEgress: true
