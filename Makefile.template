@@ -1,5 +1,6 @@
-REPO?=<<repository_url>>
+SNOWFLAKE_REPO?=<<repository_url>>
 DOCKER_IMAGE=jupyter_spcs
+SNOWFLAKE_COMPUTE_POOL?=your_compute_pool
 
 help:           ## Show this help.
 	@fgrep -h "##" $(MAKEFILE_LIST) | fgrep -v fgrep | sed -e 's/\\$$//' | sed -e 's/##//'
@@ -13,18 +14,18 @@ run:  ## Run local Docker image - make sure to set environment variables properl
 all: login build push_docker
 
 login:  ## Login to Snowflake Docker repo
-	docker login $(REPO)
+	docker login $(SNOWFLAKE_REPO)
 
 build:  ## Build Docker image for Snowpark Container Services
 	docker build --platform linux/amd64 -t $(DOCKER_IMAGE) .
 
 push_docker:  ## Push Docker image to Snowpark Container Services
-	docker tag $(DOCKER_IMAGE) $(REPO)/$(DOCKER_IMAGE)
-	docker push $(REPO)/$(DOCKER_IMAGE)
+	docker tag $(DOCKER_IMAGE) $(SNOWFLAKE_REPO)/$(DOCKER_IMAGE)
+	docker push $(SNOWFLAKE_REPO)/$(DOCKER_IMAGE)
 
 ddl: ## Prints DDL statement for Service
 	@printf "CREATE SERVICE jupyter\n"
-	@printf "  IN COMPUTE POOL your_compute_pool\n"
+	@printf "  IN COMPUTE POOL $(SNOWFLAKE_COMPUTE_POOL)\n"
 	@printf "  FROM SPECIFICATION \$$\$$\n"
 	@cat jupyter.yaml
 	@printf "  \$$\$$;\n"
