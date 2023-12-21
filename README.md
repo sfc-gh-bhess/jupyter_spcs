@@ -19,6 +19,7 @@ Run the following steps as `ACCOUNTADMIN`.
 ```
 CREATE ROLE spcs_role;
 GRANT ROLE spcs_role TO ACCOUNTADMIN;
+GRANT BIND SERVICE ENDPOINT ON ACCOUNT TO ROLE spcs_role;
 ```
 2. Create a `COMPUTE POOL`.
 ```
@@ -114,7 +115,7 @@ CREATE SERVICE jupyter
 spec:
 containers:
     - name: jupyter
-    image: <YOUR_ACCOUNT>.registry.snowflakecomputing.com/sandbox/idea/repo1/jupyter_spcs
+    image: <YOUR_ACCOUNT>.registry.snowflakecomputing.com/sandbox/spcs/repo1/jupyter_spcs
     env:
         SNOWFLAKE_WAREHOUSE: wh_xs
     volumeMounts:
@@ -129,9 +130,9 @@ endpoints:
     public: true
 volumes:
     - name: pythonpath
-    source: "@SANDBOX.IDEA.PYTHON_PACKAGES"
+    source: "@SANDBOX.SPCS.PYTHON_PACKAGES"
     - name: jupyterhome
-    source: "@SANDBOX.IDEA.JUPYTER_HOME"
+    source: "@SANDBOX.SPCS.JUPYTER_HOME"
 networkPolicyConfig:
     allowInternetEgress: true
 $$;
