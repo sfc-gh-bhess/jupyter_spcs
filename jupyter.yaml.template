@@ -19,5 +19,7 @@ spec:
       source: "<<pythonpath_stage>>"
     - name: jupyterhome
       source: "<<jupyterhome_stage>>"
-  networkPolicyConfig:
-    allowInternetEgress: true
+serviceRoles:
+- name: app
+  endpoints:
+  - jupyter

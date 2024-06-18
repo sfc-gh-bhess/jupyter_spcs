@@ -16,13 +16,13 @@ This service will mount 2 stages into the container:
 ## Common Setup
 Run the following steps as `ACCOUNTADMIN`.
 1. Create a `ROLE` that will be used for Snowpark Container Services administration.
-```
+```sql
 CREATE ROLE spcs_role;
 GRANT ROLE spcs_role TO ACCOUNTADMIN;
 GRANT BIND SERVICE ENDPOINT ON ACCOUNT TO ROLE spcs_role;
 ```
 2. Create a `COMPUTE POOL`.
-```
+```sql
 CREATE COMPUTE POOL pool1
     MIN_NODES = 1
     MAX_NODES = 1
@@ -30,7 +30,7 @@ CREATE COMPUTE POOL pool1
 GRANT USAGE, MONITOR ON COMPUTE POOL pool1 TO ROLE spcs_role;
 ```
 3. Create a `WAREHOUSE` that we'll use in our `SERVICE`.
-```
+```sql
 CREATE OR REPLACE WAREHOUSE wh_xs WITH
     WAREHOUSE_SIZE = 'X-SMALL'
     AUTO_SUSPEND = 180
@@ -39,7 +39,7 @@ CREATE OR REPLACE WAREHOUSE wh_xs WITH
 GRANT ALL ON WAREHOUSE wh_xs TO ROLE spcs_role;
 ```
 4. Create the necessary `SECURITY INTEGRATION` for Snowpark Container Services.
-```
+```sql
 CREATE SECURITY INTEGRATION snowservices_ingress_oauth
     TYPE=oauth
     OAUTH_CLIENT=snowservices_ingress
@@ -48,12 +48,12 @@ CREATE SECURITY INTEGRATION snowservices_ingress_oauth
 
 ## Project Setup
 1. Use the `SPCS_ROLE`
-```
+```sql
 USE ROLE spcs_role;
 ```
 2. Create a `DATABASE` and `SCHEMA` for this use. You can, of course use
   an existing `DATABASE` and `SCHEMA`.
-```
+```sql
 CREATE DATABASE sandbox;
 CREATE SCHEMA spcs;
 USE SCHEMA sandbox.spcs;
@@ -61,7 +61,7 @@ USE SCHEMA sandbox.spcs;
 3. Create the `IMAGE REPOSITORY` and `STAGES` we will need. 
   The `PYTHON_PACKAGES` stage will hold the installed packages. The
   `JUPYTER_HOME` stage will hold the Jupyter working directory files.
-```
+```sql
 CREATE IMAGE REPOSITORY repo1;
 CREATE STAGE python_packages 
     DIRECTORY = ( ENABLE = true ) 
@@ -72,13 +72,13 @@ CREATE STAGE jupyter_home
 ```
 4. You will need the repository URL for the `IMAGE REPOSITORY`. Run
   the following command and note the value for `repository_url`.
-```
+```sql
 SHOW IMAGE REPOSITORIES;
 ```
 
 ## Build the Docker image and upload to Snowflake
 1. In the root directory of this repository, run the following command.
-```
+```bash
 bash ./configure.sh
 ```
   When prompted, enter:
@@ -92,7 +92,7 @@ bash ./configure.sh
   the specified image repository. It also creates a `jupyter.yaml` file that is
   the Snowpark Container Services specification file for use when creating the `SERVICE`.
 2. Build the image, tag it, and push it to Snowflake.
-```
+```bash
 make all
 ```
 3. The `make ddl` command will print a sample SQL DDL statement to create
@@ -102,13 +102,13 @@ make all
 
 ## Create the Service and Grant Access
 1. Use the `SPCS_ROLE` and the `DATABASE` and `SCHEMA` we created earlier.
-```
+```sql
 USE ROLE spcs_role;
 USE SCHEMA sandbox.spcs;
 ```
 2. Use the DDL that was produced by `make ddl`, replacing `POOL1` for the 
   `COMPUTE POOL`:
-```
+```sql
 CREATE SERVICE jupyter
     IN COMPUTE POOL pool1
     FROM SPECIFICATION $$
@@ -133,17 +133,18 @@ volumes:
     source: "@SANDBOX.SPCS.PYTHON_PACKAGES"
     - name: jupyterhome
     source: "@SANDBOX.SPCS.JUPYTER_HOME"
-networkPolicyConfig:
-    allowInternetEgress: true
+serviceRoles:
+- name: app
+  endpoints:
+  - jupyter
 $$;
 ```
 3. See that the service has started by executing `SHOW SERVICES IN COMPUTE POOL pool1` 
   and `SELECT system$get_service_status('jupyter')`.
 4. Find the public endpoint for the service by executing `SHOW ENDPOINTS IN SERVICE jupyter`.
-5. Grant `USAGE` on the `SERVICE` to other `ROLES` so they can access it: 
-  `GRANT USAGE ON SERVICE jupyter TO ROLE some_role`.
-  Note that a user needs to have a default `ROLE` _other_ than `ACCOUNTADMIN`,
-  `SECURITYADMIN`, or `ORGADMIN` to visit the endpoint for the `SERVICE`.
+5. Grant permissions for folks to visit the Streamlit. You do this by granting 
+   the SERVICE ROLE: `GRANT SERVICE ROLE jupyter!app TO ROLE some_role`, 
+   where you specify the role in place of `some_role`.
 
 ## Use Jupyter
 1. Navigate to the endpoint and authenticate with a user that has access.
